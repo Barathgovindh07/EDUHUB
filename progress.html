@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance Analytics | EduPortal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-[#2D317A] text-white flex flex-col shrink-0">
+        <div class="p-8 border-b border-white/10">
+            <h1 class="text-2xl font-black tracking-widest italic uppercase">EduPortal</h1>
+        </div>
+        <nav class="flex-1 mt-8 px-4 space-y-2">
+            <a href="dashboard.html" class="flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
+                <i class="fas fa-home w-5"></i> <span>Home</span>
+            </a>
+            <a href="calendar.html" class="flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
+                <i class="fas fa-calendar-alt w-5"></i> <span>Calendar</span>
+            </a>
+            <a href="#" class="flex items-center gap-4 p-4 rounded-xl bg-white/10 shadow-sm">
+                <i class="fas fa-chart-line w-5"></i> <span class="font-semibold">Progress</span>
+            </a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-8 md:p-12 overflow-y-auto">
+        <div class="max-w-6xl mx-auto">
+            <header class="mb-12">
+                <h2 class="text-4xl font-extrabold text-slate-800 mb-2">Performance Analytics</h2>
+                <p class="text-slate-500 font-medium">Visualizing your academic journey and study patterns.</p>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div class="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
+                    <h3 class="text-xl font-bold text-slate-800 mb-8">Weekly Study Trend</h3>
+                    <div class="h-72">
+                        <canvas id="weeklyTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
+                    <h3 class="text-xl font-bold text-slate-800 mb-8">Subject Distribution</h3>
+                    <div class="h-72">
+                        <canvas id="subjectDistChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-indigo-600 p-8 rounded-[2rem] text-white shadow-lg shadow-indigo-200">
+                        <p class="text-indigo-100 text-sm font-bold uppercase mb-2">Total Study Hours</p>
+                        <h4 class="text-4xl font-black">42.5 hrs</h4>
+                    </div>
+                    <div class="bg-emerald-500 p-8 rounded-[2rem] text-white shadow-lg shadow-emerald-100">
+                        <p class="text-emerald-50 text-sm font-bold uppercase mb-2">Quizzes Completed</p>
+                        <h4 class="text-4xl font-black">12</h4>
+                    </div>
+                    <div class="bg-amber-500 p-8 rounded-[2rem] text-white shadow-lg shadow-amber-100">
+                        <p class="text-amber-50 text-sm font-bold uppercase mb-2">Learning Streak</p>
+                        <h4 class="text-4xl font-black">5 Days</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+   <script>
+    // 1. Fetch all data from localStorage
+    const userData = JSON.parse(localStorage.getItem('currentUser')) || { subjects: [] };
+    const realStudyData = JSON.parse(localStorage.getItem('studyTimeData')) || {};
+    const quizCount = localStorage.getItem('totalQuizzes') || 0; // Dynamic Quiz Data
+    const studyLog = JSON.parse(localStorage.getItem('studyLog')) || []; // For Streak Calculation
+    
+    const subjects = userData.subjects;
+
+    // 2. Calculate Statistics
+    // Actual Time Spent
+    const timeValues = subjects.map(sub => realStudyData[sub] ? parseFloat(realStudyData[sub].toFixed(2)) : 0);
+    const totalHours = Object.values(realStudyData).reduce((a, b) => a + b, 0).toFixed(1);
+
+    // Dynamic Streak Calculation
+    function calculateStreak(dates) {
+        if (!dates.length) return 0;
+        let streak = 0;
+        let today = new Date().toDateString();
+        let sortedDates = [...new Set(dates)].sort((a, b) => new Date(b) - new Date(a));
+        
+        for (let i = 0; i < sortedDates.length; i++) {
+            let d = new Date();
+            d.setDate(d.getDate() - i);
+            if (sortedDates[i] === d.toDateString()) streak++;
+            else break;
+        }
+        return streak;
+    }
+    const currentStreak = calculateStreak(studyLog);
+
+    // 3. Update the UI Elements (The Cards)
+    document.querySelector('.bg-indigo-600 h4').innerText = `${totalHours} hrs`;
+    document.querySelector('.bg-emerald-500 h4').innerText = quizCount;
+    document.querySelector('.bg-amber-500 h4').innerText = `${currentStreak} Days`;
+
+    // 4. Update the Weekly Intensity Graph (Line Chart)
+    // Here we use the actual studyLog to map intensity across the last 7 days
+    const last7Days = [...Array(7)].map((_, i) => {
+        let d = new Date();
+        d.setDate(d.getDate() - i);
+        return d.toDateString();
+    }).reverse();
+
+    const intensityData = last7Days.map(date => studyLog.filter(d => d === date).length);
+
+    new Chart(document.getElementById('weeklyTrendChart'), {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Sessions',
+                data: intensityData, // Real activity frequency
+                borderColor: '#6366f1',
+                tension: 0.4,
+                fill: true,
+                backgroundColor: 'rgba(99, 102, 241, 0.1)'
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    // 5. Subject Distribution (Radar Chart)
+    new Chart(document.getElementById('subjectDistChart'), {
+        type: 'radar',
+        data: {
+            labels: subjects,
+            datasets: [{
+                label: 'Hours Spent',
+                data: timeValues,
+                backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                borderColor: '#4F46E5',
+                borderWidth: 2
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+</script>
+</body>
+</html>

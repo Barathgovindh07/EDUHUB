@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subject Resources | EduPortal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="dashboard.html" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-indigo-600 hover:text-white transition-all">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h1 id="display-subject-name" class="text-2xl font-black text-slate-800 capitalize italic tracking-tight">Subject Name</h1>
+            </div>
+            <div class="flex items-center gap-2 text-slate-400">
+                <i class="fas fa-graduation-cap"></i>
+                <span class="text-sm font-bold uppercase tracking-widest">Resources</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto p-6 md:p-10">
+        
+        <div class="flex bg-white p-2 rounded-2xl shadow-sm border border-slate-100 mb-10 w-fit mx-auto md:mx-0">
+            <button onclick="switchTab('notes')" id="btn-notes" class="tab-active px-6 py-3 rounded-xl font-bold transition-all text-indigo-600 bg-indigo-50">
+                <i class="fas fa-file-alt mr-2"></i> Notes
+            </button>
+            <button onclick="switchTab('books')" id="btn-books" class="px-6 py-3 rounded-xl font-bold transition-all text-slate-400 hover:text-indigo-600">
+                <i class="fas fa-book mr-2"></i> Books
+            </button>
+            <button onclick="switchTab('links')" id="btn-links" class="px-6 py-3 rounded-xl font-bold transition-all text-slate-400 hover:text-indigo-600">
+                <i class="fas fa-link mr-2"></i> Links
+            </button>
+        </div>
+
+        <div id="resource-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            </div>
+    </main>
+
+    <script>
+        // 1. Get Subject from the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const subject = urlParams.get('name') || "General Subject";
+        document.getElementById('display-subject-name').innerText = subject;
+
+        // 2. Mock Data for Resources
+        const data = {
+            notes: [
+                { title: `${subject} Basics`, info: "PDF • 2.5MB", icon: "fa-file-pdf", color: "text-red-500" },
+                { title: "Lecture Summary", info: "DOCX • 1.1MB", icon: "fa-file-word", color: "text-blue-500" },
+                { title: "Formula Sheet", info: "PDF • 800KB", icon: "fa-file-code", color: "text-emerald-500" }
+            ],
+            books: [
+                { title: `Advanced ${subject}`, info: "Author: Dr. Smith", icon: "fa-book-open", color: "text-amber-500" },
+                { title: "Reference Guide", info: "Author: Jane Doe", icon: "fa-atlas", color: "text-indigo-500" }
+            ],
+            links: [
+                { title: "Video Tutorial", info: "YouTube", icon: "fa-play-circle", color: "text-rose-500" },
+                { title: "Practice Quiz", info: "Quizizz", icon: "fa-vial", color: "text-purple-500" },
+                { title: "Official Documentation", info: "External Wiki", icon: "fa-globe", color: "text-sky-500" }
+            ]
+        };
+
+        // 3. Render logic
+        function render(type) {
+            const grid = document.getElementById('resource-grid');
+            grid.innerHTML = ""; // Clear existing
+
+            data[type].forEach(item => {
+                grid.innerHTML += `
+                    <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group cursor-pointer">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl ${item.color}">
+                                <i class="fas ${item.icon}"></i>
+                            </div>
+                            <i class="fas fa-chevron-right text-slate-200 group-hover:text-indigo-500 transition-colors"></i>
+                        </div>
+                        <h4 class="text-xl font-bold text-slate-800 mb-1 capitalize">${item.title}</h4>
+                        <p class="text-slate-400 text-sm font-medium">${item.info}</p>
+                    </div>
+                `;
+            });
+        }
+
+        // 4. Tab Switching logic
+        function switchTab(type) {
+            // Update buttons
+            const buttons = ['notes', 'books', 'links'];
+            buttons.forEach(b => {
+                const btn = document.getElementById(`btn-${b}`);
+                btn.classList.remove('text-indigo-600', 'bg-indigo-50');
+                btn.classList.add('text-slate-400');
+            });
+
+            const activeBtn = document.getElementById(`btn-${type}`);
+            activeBtn.classList.add('text-indigo-600', 'bg-indigo-50');
+            activeBtn.classList.remove('text-slate-400');
+
+            render(type);
+        }
+
+        // --- QUIZ TRACKING LOGIC ---
+function completeQuiz() {
+    // 1. Get the current count from memory (default to 0 if empty)
+    let count = parseInt(localStorage.getItem('totalQuizzes')) || 0;
+    
+    // 2. Add one to the total
+    localStorage.setItem('totalQuizzes', count + 1);
+    
+    // 3. Provide feedback to the user
+    alert("Quiz completed! Your progress has been updated.");
+}
+
+        // Initial Load
+        render('notes');
+        // --- NEW TRACKING LOGIC ---
+let startTime = Date.now();
+const currentSub = new URLSearchParams(window.location.search).get('name');
+
+// When the user leaves the page or closes the tab, save the time spent
+window.addEventListener('beforeunload', () => {
+    let endTime = Date.now();
+    let timeSpentMs = endTime - startTime;
+    let timeSpentHours = timeSpentMs / (1000 * 60 * 60); // Convert to hours
+
+    // Get existing data or start new
+    let studyData = JSON.parse(localStorage.getItem('studyTimeData')) || {};
+    
+    // Add the new time to the existing total for this subject
+    studyData[currentSub] = (studyData[currentSub] || 0) + timeSpentHours;
+    
+    localStorage.setItem('studyTimeData', JSON.stringify(studyData));
+});
+
+    </script>
+</body>
+</html>

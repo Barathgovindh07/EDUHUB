@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Calendar | EduPortal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .calendar-day:hover { background-color: #f8fafc; cursor: pointer; }
+        .has-event::after { content: ''; display: block; width: 6px; height: 6px; background: #6366f1; border-radius: 50%; margin: 2px auto 0; }
+        .selected-day { background-color: #6366f1 !important; color: white !important; }
+    </style>
+</head>
+<body class="bg-slate-50 flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-[#2D317A] text-white flex flex-col shrink-0">
+        <div class="p-8 border-b border-white/10">
+            <h1 class="text-2xl font-black tracking-widest italic">EDUPORTAL</h1>
+        </div>
+        <nav class="flex-1 mt-8 px-4 space-y-2">
+            <a href="dashboard.html" class="flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
+                <i class="fas fa-home w-5"></i> <span>Home</span>
+            </a>
+            <a href="#" class="flex items-center gap-4 p-4 rounded-xl bg-white/10 shadow-sm">
+                <i class="fas fa-calendar-alt w-5"></i> <span class="font-semibold">Calendar</span>
+            </a>
+            <a href="#" class="flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition">
+                <i class="fas fa-chart-line w-5"></i> <span>Progress</span>
+            </a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <div class="max-w-5xl mx-auto">
+            <header class="flex justify-between items-center mb-10">
+                <h2 class="text-3xl font-extrabold text-slate-800">Study Planner</h2>
+                <div class="flex gap-4">
+                    <button onclick="changeMonth(-1)" class="p-2 bg-white rounded-lg border border-slate-200 hover:bg-slate-50"><i class="fas fa-chevron-left"></i></button>
+                    <h3 id="month-display" class="text-xl font-bold w-40 text-center flex items-center justify-center">Month Year</h3>
+                    <button onclick="changeMonth(1)" class="p-2 bg-white rounded-lg border border-slate-200 hover:bg-slate-50"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8">
+                    <div class="grid grid-cols-7 mb-4">
+                        <div class="text-center text-xs font-bold text-slate-400 uppercase">Sun</div>
+                        <div class="text-center text-xs font-bold text-slate-400 uppercase">Mon</div>
+                        <div class="text-center text-xs font-bold text-slate-400 uppercase">Tue</div>
+                        <div class="text-center text-xs font-bold text-slate-400 uppercase">Wed</div>
+                        <div class="text-center text-xs font-bold text-slate-400 uppercase">Thu</div>
+                        <div class="text-center text-xs font-bold text-slate-400 uppercase">Fri</div>
+                        <div class="text-center text-xs font-bold text-slate-400 uppercase">Sat</div>
+                    </div>
+                    <div id="calendar-days" class="grid grid-cols-7 gap-2">
+                        </div>
+                </div>
+
+                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8">
+                    <h4 id="selected-date-text" class="text-lg font-bold text-slate-800 mb-6">Select a date</h4>
+                    
+                    <div id="event-list" class="space-y-4 mb-8 h-48 overflow-y-auto">
+                        </div>
+
+                    <div class="pt-6 border-t border-slate-100">
+                        <input type="text" id="event-input" placeholder="New assignment/exam..." class="w-full p-3 rounded-xl border border-slate-200 mb-3 outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button onclick="addEvent()" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition">Add Event</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let date = new Date();
+        let selectedDate = null;
+        let events = JSON.parse(localStorage.getItem('eduEvents')) || {};
+
+        function renderCalendar() {
+            const daysContainer = document.getElementById('calendar-days');
+            const monthDisplay = document.getElementById('month-display');
+            daysContainer.innerHTML = '';
+
+            const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+            const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+
+            monthDisplay.innerText = date.toLocaleDateString('default', { month: 'long', year: 'numeric' });
+
+            // Empty slots for start of month
+            for (let i = 0; i < firstDay; i++) {
+                daysContainer.innerHTML += `<div></div>`;
+            }
+
+            // Actual days
+            for (let i = 1; i <= lastDay; i++) {
+                const dateKey = `${date.getFullYear()}-${date.getMonth() + 1}-${i}`;
+                const hasEvent = events[dateKey] ? 'has-event' : '';
+                const isSelected = selectedDate === dateKey ? 'selected-day' : '';
+
+                daysContainer.innerHTML += `
+                    <div onclick="selectDay(${i})" class="calendar-day h-12 w-full flex flex-col items-center justify-center rounded-xl font-medium transition-all ${hasEvent} ${isSelected}">
+                        ${i}
+                    </div>
+                `;
+            }
+        }
+
+        function changeMonth(dir) {
+            date.setMonth(date.getMonth() + dir);
+            renderCalendar();
+        }
+
+        function selectDay(day) {
+            selectedDate = `${date.getFullYear()}-${date.getMonth() + 1}-${day}`;
+            document.getElementById('selected-date-text').innerText = `Events for ${selectedDate}`;
+            renderCalendar();
+            renderEvents();
+        }
+
+        function renderEvents() {
+            const list = document.getElementById('event-list');
+            list.innerHTML = '';
+            const dayEvents = events[selectedDate] || [];
+
+            if (dayEvents.length === 0) {
+                list.innerHTML = `<p class="text-slate-400 text-sm">No events planned.</p>`;
+                return;
+            }
+
+            dayEvents.forEach((ev, idx) => {
+                list.innerHTML += `
+                    <div class="flex items-center justify-between p-3 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-medium">
+                        <span>${ev}</span>
+                        <button onclick="deleteEvent(${idx})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+            });
+        }
+
+        function addEvent() {
+            const input = document.getElementById('event-input');
+            if (!selectedDate || !input.value) return;
+
+            if (!events[selectedDate]) events[selectedDate] = [];
+            events[selectedDate].push(input.value);
+            
+            localStorage.setItem('eduEvents', JSON.stringify(events));
+            input.value = '';
+            renderEvents();
+            renderCalendar();
+        }
+
+        function deleteEvent(idx) {
+            events[selectedDate].splice(idx, 1);
+            if (events[selectedDate].length === 0) delete events[selectedDate];
+            localStorage.setItem('eduEvents', JSON.stringify(events));
+            renderEvents();
+            renderCalendar();
+        }
+
+        renderCalendar();
+    </script>
+</body>
+</html>
