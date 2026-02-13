@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | EduPortal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Smooth transitions for a professional feel */
+        .subject-card { transition: all 0.3s ease; border: 1px solid #f1f5f9; }
+        .subject-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); border-color: #e2e8f0; }
+        .sidebar-link:hover { background: rgba(255, 255, 255, 0.05); }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] flex h-screen overflow-hidden">
+
+    <script>
+        if (!localStorage.getItem('currentUser')) { window.location.href = 'login.html'; }
+    </script>
+
+    <aside class="w-64 bg-[#2D317A] text-white flex flex-col shrink-0">
+        <div class="p-8 border-b border-white/5">
+            <h1 class="text-2xl font-black tracking-widest italic">EDUPORTAL</h1>
+        </div>
+        
+        <nav class="flex-1 mt-8 px-4 space-y-2">
+            <a href="dashboard.html" class="sidebar-link flex items-center gap-4 p-4 rounded-2xl bg-white/10 shadow-inner">
+                <i class="fas fa-home w-5"></i> <span class="font-bold">Home</span>
+            </a>
+            <a href="calendar.html" class="sidebar-link flex items-center gap-4 p-4 rounded-2xl transition">
+                <i class="fas fa-calendar-alt w-5"></i> <span>Calendar</span>
+            </a>
+            <a href="progress.html" class="sidebar-link flex items-center gap-4 p-4 rounded-2xl transition">
+                <i class="fas fa-chart-line w-5"></i> <span>Progress</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-white/5 space-y-2">
+            <button onclick="openEditModal()" class="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500 hover:text-white transition font-bold text-sm">
+                <i class="fas fa-user-edit"></i> Edit Profile
+            </button>
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-600 hover:text-white transition font-bold text-sm">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-8 md:p-12 overflow-y-auto">
+        <header class="flex justify-between items-start mb-12">
+            <div>
+                <h2 id="user-welcome" class="text-4xl font-black text-slate-800 mb-1 leading-tight">Good Morning</h2>
+                <p id="user-reg" class="text-slate-400 font-bold tracking-wide text-sm uppercase"></p>
+            </div>
+            <div id="user-avatar" class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 shadow-xl flex items-center justify-center text-white text-xl font-bold">
+                </div>
+        </header>
+
+        <section class="mb-16">
+            <h3 class="text-lg font-bold text-slate-500 mb-6 uppercase tracking-widest flex items-center gap-3">
+                <span class="w-8 h-[2px] bg-indigo-600"></span> My Enrolled Subjects
+            </h3>
+            <div id="subject-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                </div>
+        </section>
+
+        <section class="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
+            <h3 class="text-xl font-bold text-slate-800 mb-8">Weekly Activity Analysis</h3>
+            <div class="h-80">
+                <canvas id="timeChart"></canvas>
+            </div>
+        </section>
+    </main>
+
+    <div id="editModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden items-center justify-center z-[100] p-6">
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl overflow-hidden relative">
+            <h3 class="text-2xl font-black text-slate-800 mb-2">Update Profile</h3>
+            <p class="text-slate-500 mb-8">Refine your academic details below.</p>
+            
+            <div class="space-y-4">
+                <input type="text" id="edit-name" placeholder="Full Name" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                <input type="text" id="edit-reg" placeholder="Registration ID" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                <textarea id="edit-subjects" placeholder="Subjects (Comma separated)" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 h-28"></textarea>
+            </div>
+
+            <div class="flex gap-4 mt-10">
+                <button onclick="closeEditModal()" class="flex-1 py-4 font-bold text-slate-400 hover:text-slate-600 transition">Cancel</button>
+                <button onclick="saveProfileChanges()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. DATA INITIALIZATION
+        const userData = JSON.parse(localStorage.getItem('currentUser'));
+        const studyTimeData = JSON.parse(localStorage.getItem('studyTimeData')) || {};
+
+        // 2. DYNAMIC GREETING
+        const hour = new Date().getHours();
+        let greetText = "Good Night";
+        if (hour < 12) greetText = "Good Morning";
+        else if (hour < 17) greetText = "Good Afternoon";
+        else if (hour < 21) greetText = "Good Evening";
+
+        document.getElementById('user-welcome').innerText = `${greetText}, ${userData.name}`;
+        document.getElementById('user-reg').innerText = `ID: ${userData.regNo}`;
+        document.getElementById('user-avatar').innerText = userData.name.charAt(0).toUpperCase();
+
+        // 3. RENDER SUBJECTS (FIXED STRUCTURE)
+        const grid = document.getElementById('subject-grid');
+        const colors = ['indigo', 'blue', 'purple', 'emerald', 'rose'];
+
+        userData.subjects.forEach((sub, i) => {
+            const color = colors[i % colors.length];
+            const hours = studyTimeData[sub] ? studyTimeData[sub].toFixed(1) : "0.0";
+            
+            grid.innerHTML += `
+                <a href="subject_detail.html?name=${encodeURIComponent(sub)}" class="subject-card block bg-white p-8 rounded-[2rem]">
+                    <div class="w-14 h-14 bg-${color}-50 text-${color}-600 rounded-2xl flex items-center justify-center text-2xl mb-6">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h4 class="text-2xl font-bold text-slate-800 mb-1 capitalize">${sub}</h4>
+                    <p class="text-slate-400 text-sm mb-8">Access notes & materials</p>
+                    <div class="flex items-center justify-between text-xs font-bold text-slate-400 mb-2 uppercase tracking-tighter">
+                        <span>Usage: ${hours} hrs</span>
+                        <span>Level: ${Math.floor(Math.random()*100)}%</span>
+                    </div>
+                    <div class="bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div class="bg-${color}-500 h-full w-[45%]"></div>
+                    </div>
+                </a>
+            `;
+        });
+
+        // 4. THE CHART (FIXED REAL DATA)
+        new Chart(document.getElementById('timeChart'), {
+            type: 'bar',
+            data: {
+                labels: userData.subjects,
+                datasets: [{
+                    label: 'Hours Spent',
+                    data: userData.subjects.map(s => studyTimeData[s] || 0),
+                    backgroundColor: '#6366f1',
+                    borderRadius: 12
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+
+        // 5. MODAL LOGIC
+        function openEditModal() {
+            document.getElementById('edit-name').value = userData.name;
+            document.getElementById('edit-reg').value = userData.regNo;
+            document.getElementById('edit-subjects').value = userData.subjects.join(', ');
+            document.getElementById('editModal').classList.replace('hidden', 'flex');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.replace('flex', 'hidden');
+        }
+
+        function saveProfileChanges() {
+            const updated = {
+                name: document.getElementById('edit-name').value,
+                regNo: document.getElementById('edit-reg').value,
+                subjects: document.getElementById('edit-subjects').value.split(',').map(s => s.trim()).filter(s => s !== "")
+            };
+            localStorage.setItem('currentUser', JSON.stringify(updated));
+            location.reload();
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>
