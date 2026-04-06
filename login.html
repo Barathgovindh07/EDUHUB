@@ -7,94 +7,94 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .login-card { animation: slideUp 0.6s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="gradient-bg min-h-screen flex items-center justify-center p-6">
+<body class="bg-gradient-to-br from-[#6366f1] to-[#a855f7] flex items-center justify-center min-h-screen p-6">
 
-    <div class="glass-effect w-full max-w-md rounded-3xl shadow-2xl p-8">
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl mb-4">
-                <i class="fas fa-user-graduate text-3xl"></i>
-            </div>
-            <h1 id="form-title" class="text-2xl font-bold text-gray-800">Welcome Back</h1>
-            <p id="form-subtitle" class="text-gray-500">Log in to access your portal.</p>
+    <div class="login-card bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl text-center">
+        <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6">
+            <i class="fas fa-user-shield"></i>
         </div>
 
-        <form id="auth-form" class="space-y-5">
+        <h2 class="text-3xl font-black text-slate-800 mb-2 italic uppercase">Welcome Back</h2>
+        <p class="text-slate-500 mb-8 font-medium">Access your personalized portal.</p>
+
+        <div class="space-y-4 text-left">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">User ID</label>
-                <input type="text" id="userid" required class="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter your ID (e.g., student01)">
-            </div>
-            
-            <div id="registration-fields" class="hidden space-y-5 pt-4 border-t border-gray-100 mt-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <input type="text" id="full-name" class="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="John Doe">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Registration Number</label>
-                    <input type="text" id="reg-no" class="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="REG-12345">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Subjects (Comma separated)</label>
-                    <input type="text" id="subject-input" class="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="Math, Physics">
+                <label class="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1">Registered Email</label>
+                <div class="relative">
+                    <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
+                    <input type="email" id="login-email" placeholder="e.g., alex@edu.com" 
+                        class="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition">
                 </div>
             </div>
-
-            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg transition">
-                Enter Dashboard
-            </button>
-        </form>
-
-        <div class="mt-8 text-center">
-            <button id="toggle-btn" class="text-indigo-600 font-bold hover:underline text-sm">First time? Register Details</button>
+            <div>
+                <label class="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1">Password</label>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
+                    <input type="password" id="login-pass" placeholder="••••••••" 
+                        class="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                </div>
+            </div>
         </div>
+
+        <button id="login-btn" class="w-full mt-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition flex items-center justify-center gap-3">
+            <span>Verify & Enter</span>
+            <i class="fas fa-arrow-right"></i>
+        </button>
+
+        <p class="text-center mt-8 text-slate-500 font-medium text-sm">
+            Need an account? <a href="signup.html" class="text-indigo-600 font-black hover:underline">Register Here</a>
+        </p>
     </div>
 
-    <script>
-        const authForm = document.getElementById('auth-form');
-        const regFields = document.getElementById('registration-fields');
-        const toggleBtn = document.getElementById('toggle-btn');
-        let isFirstTime = false;
+    <script type="module">
+        import { auth, db } from './firebase-config.js';
+        import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        toggleBtn.addEventListener('click', () => {
-            isFirstTime = !isFirstTime;
-            regFields.classList.toggle('hidden');
-            toggleBtn.innerText = isFirstTime ? "Already registered? Login" : "First time? Register Details";
-            document.getElementById('form-title').innerText = isFirstTime ? "Create Profile" : "Welcome Back";
-        });
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
 
-        authForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const enteredId = document.getElementById('userid').value.trim();
-            
-            // Get the list of all users from storage (or create empty list)
-            let userDatabase = JSON.parse(localStorage.getItem('userDatabase')) || {};
+            if (!email || !pass) return alert("Please fill in all details.");
 
-            if (isFirstTime) {
-                // SAVE NEW USER
-                const newUser = {
-                    name: document.getElementById('full-name').value || "User",
-                    regNo: document.getElementById('reg-no').value || "N/A",
-                    subjects: document.getElementById('subject-input').value.split(',').map(s => s.trim()).filter(s => s !== "")
-                };
-                userDatabase[enteredId] = newUser;
-                localStorage.setItem('userDatabase', JSON.stringify(userDatabase));
-                localStorage.setItem('currentUser', JSON.stringify(newUser));
-                alert("Profile Created!");
-            } else {
-                // LOOKUP EXISTING USER
-                if (userDatabase[enteredId]) {
-                    localStorage.setItem('currentUser', JSON.stringify(userDatabase[enteredId]));
+            const btn = document.getElementById('login-btn');
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>Authenticating...</span>`;
+            btn.disabled = true;
+
+            try {
+                // 1. Authenticate with Firebase Auth
+                const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+                const user = userCredential.user;
+
+                // 2. Fetch User Profile from Firestore
+                const q = query(collection(db, "users"), where("uid", "==", user.uid));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const userData = querySnapshot.docs[0].data();
+                    
+                    // 3. Save to local session
+                    localStorage.setItem('currentUser', JSON.stringify(userData));
+
+                    // 4. Role-Based Traffic Control
+                    if (userData.role === 'teacher') {
+                        window.location.replace("teacher_dashboard.html");
+                    } else {
+                        window.location.replace("dashboard.html");
+                    }
                 } else {
-                    alert("User ID not found. Please register first.");
-                    return;
+                    alert("Profile data not found in cloud. Contact Admin.");
                 }
+            } catch (err) {
+                console.error(err);
+                alert("Login Error: " + err.message);
+                btn.innerHTML = `<span>Verify & Enter</span> <i class="fas fa-arrow-right"></i>`;
+                btn.disabled = false;
             }
-
-            window.location.href = 'dashboard.html';
         });
     </script>
 </body>
